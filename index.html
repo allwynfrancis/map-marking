@@ -1,0 +1,376 @@
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Map</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css"
+        integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous">
+    <link type="text/css" rel="stylesheet" href="style.css">
+    <script type="text/javascript"
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAw6eYHsnVjMe8Ag3xv06wy9d8XCc5CO6A&callback=init"></script>
+    <script type="text/javascript" src="./database.js"></script>
+</head>
+
+<body onload="init();">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-lg-3">
+                <h3 class="location-header text-center mt-2">Locations</h3>
+
+                <div class="side-content" id="side-content">
+
+                    <!-- <a href="javascript:void(0);" onclick="infoOpen();">Allwyn</a> -->
+                    <!-- Love.Fish<br>
+                    580 Darling Street, Rozelle, NSW,1234<br>
+                    +91 9876543210<br>
+                    Monday 7am-5pm,Tuesday 7am-5pm,Wednesday 7am-5pm,Thrusday 7am-5pm,Friday 7am-5pm,Saturday
+                    7am-5pm,Sunday 7am-5pm<br>
+                    <hr>
+                    Young Henrys<br>
+                    76 Wilford Street, Newtown, NSW,1234<br>
+                    +91 9876543210<br>
+                    Monday 7am-5pm,Tuesday 7am-5pm,Wednesday 7am-5pm,Thrusday 7am-5pm,Friday 7am-5pm,Saturday
+                    7am-5pm,Sunday 7am-5pm<br>
+                    <hr>
+                    Hunter Gatherer<br>
+                    Greenwood Plaza, 36 Blue St, North Sydney NSW,1234<br>
+                    +91 9876543210<br>
+                    Monday 7am-5pm,Tuesday 7am-5pm,Wednesday 7am-5pm,Thrusday 7am-5pm,Friday 7am-5pm,Saturday 7am-5pm
+                    Sunday 7am-5pm<br>
+                    <hr>
+                    The Potting Shed<br>
+                    7A, 2 Huntley Street, Alexandria, NSW,1234<br>
+                    +91 9876543210<br>
+                    Monday 7am-5pm,Tuesday 7am-5pm,Wednesday 7am-5pm,Thrusday 7am-5pm,Friday 7am-5pm,Saturday
+                    7am-5pm,Sunday 7am-5pm<br> -->
+                </div>
+            </div>
+            <div class="col-lg-9">
+                <div class="form-group d-flex mt-3 justify-content-around">
+                    <input class="form-control w-75" type="text" name="searchKey" id="pac-input">
+                    <button class="search-btn btn-primary pl-5 pr-5" onclick="init()">Search</button>
+                </div>
+                <div id="map_canvas"></div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+
+    <!-- <script type="text/javascript">
+  function infoOpen(){
+            // var infoWindow = new google.maps.InfoWindow({
+            //         content: content
+            //     });
+            //     content.addListener('click', function () {
+            //         infoWindow.open(map, content);
+            //     });
+            console.log("Allwyn")
+           }
+</script> -->
+
+
+    <!-- php------------------------- -->
+
+
+    <!-- <script type="text/javascript">
+    var data = <?php echo json_encode( $locations ); ?>;
+    console.log(data);
+</script> -->
+    <script type='text/javascript'>
+
+// var info;
+// var xhr = new XMLHttpRequest();
+// xhr.open('GET', 'db.php'); // Change to your PHP file here
+// xhr.onload = function() {
+//     if (xhr.status === 200) {
+//         info = xhr.responseText;
+//         alert(info);
+//     } else {
+//         alert('Request failed: ' + xhr.status);
+//     }
+// };
+// xhr.send();
+// window.locationsDatabase = info;
+    </script>
+
+    <script type="text/javascript">
+
+        var center = new google.maps.LatLng(13.0827, 80.2707);
+        async function getPost(url) {
+
+            // Get the post data
+            var postResp = await fetch(url);
+            var records = await postResp.json();
+            // return records.map(record => {
+            //     return {
+            //         content: record.name,
+            //         cords: {
+            //             lat: record.lat,
+            //             lng: record.lon
+            //         }
+            //     }
+            // });
+            return records;
+        };
+        function getDisplayLocations(records, searchKey) {
+            let filteredRecords = records;
+            if (searchKey.trim()) {
+                filteredRecords = records.filter(location => {
+                    return location.city === searchKey
+                });
+            }
+
+            return filteredRecords.map(record => ({
+                content: record.name,
+                cords: {
+                    lat: record.lat,
+                    lng: record.lng
+                },
+                address: record.address,
+                contact: record.contact,
+                sunday: record.sunday,
+                monday: record.monday,
+                tuesday: record.tuesday,
+                wednesday: record.wednesday,
+                thrusday: record.thrusday,
+                friday: record.friday,
+                saturday: record.saturday
+            }));
+        }
+
+
+
+        function httpGet(url) {
+            var xmlHttp = new XMLHttpRequest();
+            xmlHttp.open("GET", url, true); // false for synchronous request
+            xmlHttp.send(null);
+            return xmlHttp.responseText;
+        }
+
+
+        async function init() {
+
+            var mapOptions = {
+                zoom: 3,
+                center: new google.maps.LatLng(0, 0),
+                mapTypeId: google.maps.MapTypeId.ROADMAP
+            }
+
+
+            var map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
+
+
+
+            const searchKey = document.getElementById('pac-input').value;
+            // console.log(searchKey);
+
+
+            var locations = await getPost('http://localhost:5000/LocationDb');
+            var displayLocations = getDisplayLocations(locations, searchKey)
+
+
+            var date = new Date();
+            var weekday = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            var currentDay = weekday[date.getDay()];
+
+            const bounds = new google.maps.LatLngBounds();
+            const sideContent = document.getElementById('side-content');
+            sideContent.innerHTML = '';
+
+            function infoOpen(content, day, marker) {
+                var infoWindow = new google.maps.InfoWindow({
+                    content: content + '<hr>' + day
+                });
+                infoWindow.open(map, marker);
+            }
+           
+
+        
+
+            for (var i = 0; i < displayLocations.length; i++) {
+                const displayLocation = displayLocations[i];
+                const marker = addMarker(displayLocation.cords, displayLocation.content, day);
+                // document.getElementById('side-content').innerHTML += '<a href="">'+ displayLocations[i].content+ '</a><br>';
+                // sideContent.innerHTML += displayLocations[i].address + "<br>" + displayLocations[i].contact + "<br>" + displayLocations[i].timing + '<hr>';
+
+                const anchor = document.createElement('a');
+                const locationButton = document.createElement("a");
+                locationButton.textContent = "Directions";
+                locationButton.classList.add("custom-map-control-button");
+                locationButton.style.cursor = 'pointer';
+                locationButton.style.textDecorationLine = 'underline';
+                locationButton.style.color = 'black';
+                locationButton.style.fontSize = '16';
+                locationButton.style.fontWeight = '900';
+                locationButton.addEventListener("mouseover", function () {
+                    this.style.color = "blue";
+                });
+                locationButton.addEventListener("mouseout", function () {
+                    this.style.color = "black";
+                });
+                let infoWindow = new google.maps.InfoWindow();
+                var markerA, markerB;
+                locationButton.addEventListener("click", () => {
+                    // Try HTML5 geolocation.
+                    // var lat= parseInt(lat), lng = parseInt(lng);
+                    let pos = {};
+
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                            (position) => {
+                               
+                                pos.lat = position.coords.latitude;
+                                pos.lng = position.coords.longitude;
+                        
+                                infoWindow.setPosition(pos);
+                                infoWindow.setContent("Your current Location.");
+                                infoWindow.open(map);
+                                map.setCenter(pos);
+
+                            },
+
+                            () => {
+                                handleLocationError(true, infoWindow, map.getCenter());
+                            }
+
+                        );
+
+                    } else {
+                        // Browser doesn't support Geolocation
+                        handleLocationError(false, infoWindow, map.getCenter());
+                    }
+                    console.log(pos);
+                    // console.log(displayLocations);
+
+                    var directionsService = new google.maps.DirectionsService,
+                        directionsDisplay = new google.maps.DirectionsRenderer({
+                            map: map
+                        });
+                    markerA = new google.maps.Marker({
+                        position: displayLocation.cords,
+                        title: "point A",
+                        label: "A",
+                        map: map
+                    }),
+                        markerB = new google.maps.Marker({
+
+                            position: pos,
+                            title: "point B",
+                            label: "B",
+                            map: map
+                        });
+
+                    // get route from A to B
+                    calculateAndDisplayRoute(directionsService, directionsDisplay, displayLocation.cords, pos);
+
+                    function calculateAndDisplayRoute(directionsService, directionsDisplay, cords, position) {
+                        directionsService.route({
+                            origin: cords,
+                            destination: position,
+                            avoidTolls: true,
+                            avoidHighways: false,
+                            travelMode: google.maps.TravelMode.DRIVING
+                        }, function (response, status) {
+                            if (status == google.maps.DirectionsStatus.OK) {
+                                directionsDisplay.setDirections(response);
+                            } else {
+                                window.alert('Directions request failed due to ' + status);
+                            }
+                        });
+                    }
+                });
+
+
+                function handleLocationError(browserHasGeolocation, infoWindow, pos) {
+                    infoWindow.setPosition(pos);
+                    infoWindow.setContent(
+                        browserHasGeolocation
+                            ? "Error: The Geolocation service failed."
+                            : "Error: Your browser doesn't support geolocation."
+                    );
+                    infoWindow.open(map);
+                }
+
+                anchor.innerHTML = "<hr style=transform:translateX(-10px)>" + "<h5 class=location-name onmouseover=this.style.color='blue'; onmouseout=this.style.color='black'; style=cursor:pointer;>" + displayLocation.content + "</h5>" + "<br>" + displayLocation.address + "<br>" + displayLocation.contact + "<br>" + "Sunday - " + displayLocation.sunday + " Monday - "
+                    + displayLocation.monday + " Tuesday - " + displayLocation.tuesday + " Wednesday - " + displayLocation.wednesday + " Thrusday - " + displayLocation.thrusday + " Friday - " + displayLocation.friday + " Saturday - " + displayLocation.saturday + "<br>";
+                anchor.onclick = () => {
+                    infoOpen(displayLocation.content, day, marker);
+                }
+               
+
+
+                sideContent.appendChild(anchor);
+                sideContent.appendChild(locationButton);
+                // sideContent.appendChild(document.createElement('br'));
+                // +displayLocations[i].content+'<br>'+displayLocations[i].address+'<br>'+displayLocations[i].contact+'<br>'+displayLocations[i].timing+'</div>';
+                // console.log(displayLocations[i].cords, displayLocations[i].content);
+                var day = currentDay;
+                if (day === "Sunday") {
+
+                    day = weekday[0] + ' ' + displayLocations[i].sunday;
+                }
+                else if (day === "Monday") {
+
+                    day = weekday[1] + ' ' + displayLocations[i].monday;
+                    console.log(day);
+                }
+                else if (day === "Tuesday") {
+                    day = weekday[2] + ' ' + displayLocations[i].tuesday;
+                }
+                else if (day === "Wednesday") {
+                    day = weekday[3] + ' ' + displayLocations[i].wednesday;
+                }
+                else if (day === "Thrusday") {
+                    day = weekday[4] + ' ' + displayLocations[i].thrusday;
+                }
+                else if (day === "Friday") {
+                    day = weekday[5] + ' ' + displayLocations[i].friday;
+                }
+                else {
+                    day = weekday[6] + ' ' + displayLocations[i].saturday;
+                }
+
+            }
+            map.fitBounds(bounds);
+
+
+            function addMarker(cords, content, day) {
+
+
+                var marker = new google.maps.Marker({
+                    map: map,
+                    position: cords,
+                    draggable: true,
+                    animation: google.maps.Animation.DROP,
+                });
+                marker.addListener("click", toggleBounce);
+                var infoWindow = new google.maps.InfoWindow({
+                    content: content + '<hr>' + day
+                });
+                marker.addListener('click', function () {
+                    infoWindow.open(map, marker);
+                });
+                 map.addListener('click', function () {
+                    infowindow.close(map,marker);
+                });
+
+                function toggleBounce() {
+                    if (marker.getAnimation() !== null) {
+                        marker.setAnimation(null);
+                    }
+                    else {
+                        marker.setAnimation(google.maps.Animation.BOUNCE);
+                    }
+                }
+                bounds.extend(cords);
+                return marker;
+               
+            }
+
+        }
+
+    </script>
+</body>
+
+</html>
